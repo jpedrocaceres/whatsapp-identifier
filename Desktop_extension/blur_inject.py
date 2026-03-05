@@ -93,23 +93,29 @@ STATUS_JS = """
 
 
 def get_ws_url(port):
-    """Get WebSocket debugger URL from CDP HTTP endpoint."""
+    """Get WebSocket debugger URL, scanning ports to find WhatsApp."""
+    # Try configured port and nearby ports
+    ports_to_try = [port] + [p for p in range(port, port + 10) if p != port]
+    for p in ports_to_try:
+        try:
+            url = f"http://localhost:{p}/json"
+            req = urllib.request.Request(url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                pages = json.loads(resp.read().decode())
+                for page in pages:
+                    if page.get("type") == "page" and "whatsapp" in page.get("url", "").lower():
+                        return page.get("webSocketDebuggerUrl", "")
+        except Exception:
+            continue
+    # Fallback: configured port, any page
     try:
         url = f"http://localhost:{port}/json"
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         with urllib.request.urlopen(req, timeout=2) as resp:
             pages = json.loads(resp.read().decode())
-            # Find the main WhatsApp page (not devtools or service worker)
-            for page in pages:
-                if page.get("type") == "page" and "whatsapp" in page.get("url", "").lower():
-                    return page.get("webSocketDebuggerUrl", "")
-            # Fallback: first page type entry
             for page in pages:
                 if page.get("type") == "page":
                     return page.get("webSocketDebuggerUrl", "")
-            # Last resort: first entry
-            if pages:
-                return pages[0].get("webSocketDebuggerUrl", "")
     except Exception as e:
         print(f"ERROR: Cannot connect to CDP on port {port}: {e}", file=sys.stderr)
     return ""
@@ -148,7 +154,7 @@ def main():
 
     action = sys.argv[1].lower()
     blur_px = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2].isdigit() else 8
-    port = int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3].isdigit() else 9250
+    port = int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3].isdigit() else 9251
 
     if not HAS_WEBSOCKETS:
         print("ERROR: websockets module required. Run: pip install websockets", file=sys.stderr)

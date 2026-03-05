@@ -7,7 +7,7 @@ $src = $PSScriptRoot
 Write-Host "=== WhatsApp Identifier - Build Instalador ===" -ForegroundColor Cyan
 
 # Verifica arquivos necessarios
-$required = @("WhatsAppIdentifier.exe","settings_gui.py","blur_inject.py","blur_daemon.py")
+$required = @("WhatsAppIdentifier.exe","settings_gui.py","blur_inject.py","blur_daemon.py","cdp_check.py")
 foreach ($f in $required) {
     if (!(Test-Path (Join-Path $src $f))) {
         Write-Host "ERRO: nao encontrado: $f" -ForegroundColor Red
@@ -26,6 +26,7 @@ try {
     Copy-Item (Join-Path $src "settings_gui.py")        $tmp
     Copy-Item (Join-Path $src "blur_inject.py")         $tmp
     Copy-Item (Join-Path $src "blur_daemon.py")         $tmp
+    Copy-Item (Join-Path $src "cdp_check.py")           $tmp
 
     # Script de instalacao que sera embutido
     $installCode = @'
@@ -275,13 +276,8 @@ if (!$wsInstalled) {
 Log "Configurando WebView2 debug port..."
 try {
     $envName = "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"
-    $currentVal = [Environment]::GetEnvironmentVariable($envName, "User")
-    if ($currentVal -and $currentVal -match "remote-debugging-port") {
-        Log "WebView2 debug port ja configurado: $currentVal"
-    } else {
-        [Environment]::SetEnvironmentVariable($envName, "--remote-debugging-port=9250", "User")
-        Log "WebView2 debug port configurado: --remote-debugging-port=9250"
-    }
+    [Environment]::SetEnvironmentVariable($envName, "--remote-debugging-port=9251", "User")
+    Log "WebView2 debug port configurado: --remote-debugging-port=9251"
 } catch {
     Log "AVISO: nao foi possivel configurar WebView2 debug port: $($_.Exception.Message)"
 }
@@ -300,7 +296,7 @@ try {
     $regUni = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\WhatsAppIdentifier"
     if (!(Test-Path $regUni)) { New-Item $regUni -Force | Out-Null }
     Set-ItemProperty $regUni "DisplayName"     "WhatsApp Identifier"
-    Set-ItemProperty $regUni "DisplayVersion"  "3.3"
+    Set-ItemProperty $regUni "DisplayVersion"  "3.5"
     Set-ItemProperty $regUni "Publisher"       "JoaoPedro"
     Set-ItemProperty $regUni "InstallLocation" $installDir
     Set-ItemProperty $regUni "NoModify"        1 -Type DWord
@@ -364,7 +360,7 @@ Log "========== INSTALACAO FINALIZADA =========="
     Write-Host "Script de instalacao gerado: WhatsAppIdentifier_Setup.ps1" -ForegroundColor Green
 
     # Tenta instalar ps2exe e converter para .exe
-    $setupExe = Join-Path $src "WAIdentifier_Setup_v3.3.exe"
+    $setupExe = Join-Path $src "WAIdentifier_Setup_v3.5.exe"
     $converted = $false
 
     try {

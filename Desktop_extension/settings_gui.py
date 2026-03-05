@@ -77,7 +77,7 @@ def read_config():
     hide_on_focus = config.get("Privacy", "HideOnFocus", fallback="1") == "1"
     idle_enabled = config.get("Privacy", "IdleBlurEnabled", fallback="0") == "1"
     idle_seconds = int(config.get("Privacy", "IdleBlurSeconds", fallback="30"))
-    debug_port = int(config.get("Privacy", "DebugPort", fallback="9250"))
+    debug_port = int(config.get("Privacy", "DebugPort", fallback="9251"))
 
     return {
         "name": name, "active": active,
@@ -479,6 +479,27 @@ class SettingsWindow:
             label="Intensidade do blur", var=self._blur_intensity,
             from_=2, to=20, suffix="px", label_var_name="_blur_val_label")
 
+        # CDP port detection button
+        cdp_card_h = 52
+        cdp_card = create_rounded_card(parent, card_w, cdp_card_h, radius=CARD_RADIUS)
+        cdp_card.pack(fill="x", pady=(0, 6))
+
+        cdp_left = tk.Frame(cdp_card, bg=BG_CARD)
+        cdp_card.create_window(16, cdp_card_h // 2, window=cdp_left, anchor="w")
+        tk.Label(cdp_left, text="Porta CDP", font=(FONT_FAMILY, 11),
+                 fg=TEXT_PRIMARY, bg=BG_CARD).pack(anchor="w")
+        self._cdp_status = tk.Label(cdp_left, text=f"Porta: {self._debug_port.get()}",
+                                     font=(FONT_FAMILY, 8), fg=TEXT_SECONDARY, bg=BG_CARD)
+        self._cdp_status.pack(anchor="w")
+
+        detect_btn = tk.Canvas(cdp_card, width=80, height=28,
+                               bg=BG_CARD, highlightthickness=0, cursor="hand2")
+        cdp_card.create_window(card_w - 20, cdp_card_h // 2, window=detect_btn, anchor="e")
+        detect_btn.create_rectangle(0, 0, 80, 28, fill=GREEN_PRIMARY, outline="")
+        detect_btn.create_text(40, 14, text="Detectar", fill="white",
+                               font=(FONT_FAMILY, 9, "bold"))
+        detect_btn.bind("<Button-1>", lambda e: self._detect_cdp_port())
+
     def _build_toggle_row(self, parent, card_w, label, var, sub_on, sub_off,
                            on_toggle=None):
         card_h = 52
@@ -596,6 +617,39 @@ class SettingsWindow:
             for swatch, oval_id, c in self._swatch_items:
                 swatch.itemconfig(oval_id, outline=BORDER_COLOR)
 
+    # ── Detectar porta CDP ─────────────────────────────────────────────
+    def _detect_cdp_port(self):
+        import json
+        import urllib.request
+        self._cdp_status.configure(text="Procurando...", fg="#FFCC00")
+        self.root.update()
+        found_port = None
+        for port in range(9222, 9270):
+            try:
+                url = f"http://localhost:{port}/json"
+                r = urllib.request.urlopen(url, timeout=1)
+                pages = json.loads(r.read())
+                for p in pages:
+                    if p.get("type") == "page" and "whatsapp" in p.get("url", "").lower():
+                        found_port = port
+                        break
+                if found_port:
+                    break
+            except Exception:
+                continue
+        if found_port:
+            self._debug_port.set(found_port)
+            self._cdp_status.configure(text=f"WhatsApp na porta {found_port}!", fg=GREEN_PRIMARY)
+            # Tell daemon to reconnect (it will find WhatsApp and auto-inject)
+            cmd_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "blur_cmd.txt")
+            try:
+                with open(cmd_file, "w") as f:
+                    f.write("reconnect")
+            except Exception:
+                pass
+        else:
+            self._cdp_status.configure(text="WhatsApp CDP nao encontrado", fg=ERROR_FG)
+
     # ── Botão Salvar ──────────────────────────────────────────────────
     def _build_save_button(self, parent):
         card_w = WIDTH - 46
@@ -661,7 +715,7 @@ class SettingsWindow:
 
     # ── Footer ────────────────────────────────────────────────────────
     def _build_footer(self):
-        tk.Label(self.root, text="v3.0 \u00B7 WhatsApp Desktop",
+        tk.Label(self.root, text="v3.5 \u00B7 WhatsApp Desktop",
                  font=(FONT_FAMILY, 8), fg=BORDER_COLOR,
                  bg=BG_DARK).pack(pady=(0, 10))
 

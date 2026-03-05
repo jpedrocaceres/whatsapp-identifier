@@ -29,7 +29,7 @@ global g_idleEnabled    := false
 global g_idleSeconds    := 30
 global g_blurActive     := false
 global g_lastMouseMove  := A_TickCount
-global g_debugPort      := 9250
+global g_debugPort      := 9251
 global g_cdpWsUrl       := ""
 global g_overlayOpacity := 200
 global g_overlayColor   := "1A1A2E"
@@ -37,6 +37,7 @@ global g_daemonPID      := 0
 
 CoordMode("Mouse", "Screen")
 ReadPrivacyConfig()
+LaunchWhatsAppWithCDP()
 StartDaemon()
 
 OnExit(OnAppExit)
@@ -181,7 +182,7 @@ ShowConfig(*) {
 
 CheckPyExit() {
     global g_pyPID, g_name, g_active, CFG_FILE
-    global g_blurActive, g_blurIntensity
+    global g_blurActive, g_blurIntensity, g_debugPort
 
     if ProcessExist(g_pyPID)
         return
@@ -192,11 +193,18 @@ CheckPyExit() {
     g_name   := IniRead(CFG_FILE, "Settings", "Name",   "")
     g_active := IniRead(CFG_FILE, "Settings", "Active", "0") = "1"
 
-    ; Recarrega config de privacidade; se blur mudou, re-injetar
+    ; Recarrega config de privacidade; se port ou blur mudou, reiniciar daemon
     oldIntensity := g_blurIntensity
+    oldPort := g_debugPort
     ReadPrivacyConfig()
 
-    if (g_blurActive && oldIntensity != g_blurIntensity) {
+    if (oldPort != g_debugPort) {
+        ; Port changed — restart daemon with new port
+        StopDaemon()
+        StartDaemon()
+        g_blurActive := false
+        InjectBlur()
+    } else if (g_blurActive && oldIntensity != g_blurIntensity) {
         g_blurActive := false  ; Forçar re-injeção com nova intensidade
         InjectBlur()
     }
@@ -249,7 +257,25 @@ ReadPrivacyConfig() {
     g_hideOnFocus    := IniRead(CFG_FILE, "Privacy", "HideOnFocus",    "1") = "1"
     g_idleEnabled    := IniRead(CFG_FILE, "Privacy", "IdleBlurEnabled", "0") = "1"
     g_idleSeconds    := Integer(IniRead(CFG_FILE, "Privacy", "IdleBlurSeconds", "30"))
-    g_debugPort      := Integer(IniRead(CFG_FILE, "Privacy", "DebugPort", "9250"))
+    g_debugPort      := Integer(IniRead(CFG_FILE, "Privacy", "DebugPort", "9251"))
+}
+
+; ─── Launch WhatsApp if not running ────────────────────────────────
+LaunchWhatsAppWithCDP() {
+    global g_debugPort, g_privEnabled
+
+    ; Set env var so WhatsApp (and other WebView2 apps) get CDP port
+    if (g_privEnabled) {
+        envVal := "--remote-debugging-port=" g_debugPort
+        EnvSet("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", envVal)
+    }
+
+    ; Launch WhatsApp if not already running
+    if !WinExist("ahk_exe WhatsApp.Root.exe") {
+        try Run("explorer.exe shell:AppsFolder\5319275A.WhatsAppDesktop_cv1g1gvanyjgm!App")
+        WinWait("ahk_exe WhatsApp.Root.exe",, 20)
+        Sleep 5000
+    }
 }
 
 ; ─── Daemon management ──────────────────────────────────────────────
@@ -350,7 +376,7 @@ PrivacyTimerProc() {
     }
 
     ; Mouse sobre o WhatsApp + HideOnHover → remover blur
-    if (g_hideOnHover) {
+    if (g_hideOnHover && isActive) {
         try {
             WinGetPos(&wx, &wy, &ww, &wh, "ahk_exe WhatsApp.Root.exe")
             MouseGetPos(&mx, &my)
@@ -363,23 +389,19 @@ PrivacyTimerProc() {
         }
     }
 
-    ; Idle blur: se WA está em foco mas idle está ligado
+    ; Idle blur: reativa blur após inatividade
     if (g_idleEnabled && isActive) {
         elapsed := (A_TickCount - g_lastMouseMove) / 1000
         if (elapsed < g_idleSeconds) {
+            ; Still active, don't blur yet
             if (g_blurActive)
                 RemoveBlur()
             return
         }
         ; Tempo expirado → cai no injetar blur abaixo
-    } else if (isActive) {
-        ; WA em foco, HideOnFocus off, idle off → sem blur
-        if (g_blurActive)
-            RemoveBlur()
-        return
     }
 
-    ; Injetar blur CSS
+    ; WhatsApp sem foco OU privacy sempre ligada → injetar blur
     if (!g_blurActive)
         InjectBlur()
 }

@@ -121,4 +121,4 @@ Desktop_extension/
 | Componente | Versao |
 |---|---|
 | Extensao Chrome | 7.1.0 |
-| Desktop Installer | 3.3 |
+| Desktop Installer | 3.5 |
