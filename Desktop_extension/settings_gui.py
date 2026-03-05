@@ -619,24 +619,10 @@ class SettingsWindow:
 
     # ── Detectar porta CDP ─────────────────────────────────────────────
     def _detect_cdp_port(self):
-        import json
-        import urllib.request
+        from cdp_utils import find_whatsapp_port
         self._cdp_status.configure(text="Procurando...", fg="#FFCC00")
         self.root.update()
-        found_port = None
-        for port in range(9222, 9270):
-            try:
-                url = f"http://localhost:{port}/json"
-                r = urllib.request.urlopen(url, timeout=1)
-                pages = json.loads(r.read())
-                for p in pages:
-                    if p.get("type") == "page" and "whatsapp" in p.get("url", "").lower():
-                        found_port = port
-                        break
-                if found_port:
-                    break
-            except Exception:
-                continue
+        found_port, _ = find_whatsapp_port(self._debug_port.get())
         if found_port:
             self._debug_port.set(found_port)
             self._cdp_status.configure(text=f"WhatsApp na porta {found_port}!", fg=GREEN_PRIMARY)
@@ -715,7 +701,7 @@ class SettingsWindow:
 
     # ── Footer ────────────────────────────────────────────────────────
     def _build_footer(self):
-        tk.Label(self.root, text="v3.5 \u00B7 WhatsApp Desktop",
+        tk.Label(self.root, text="v3.5.1 \u00B7 WhatsApp Desktop",
                  font=(FONT_FAMILY, 8), fg=BORDER_COLOR,
                  bg=BG_DARK).pack(pady=(0, 10))
 

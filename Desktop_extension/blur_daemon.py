@@ -132,7 +132,16 @@ def write_status(status):
 
 
 def find_whatsapp_ws_url():
-    """Find WhatsApp's WebSocket debugger URL by scanning ports."""
+    """Find WhatsApp's WebSocket debugger URL using fast parallel scan."""
+    try:
+        from cdp_utils import find_whatsapp_ws_url as _find
+        url = _find(preferred_port=PORT)
+        if url:
+            log(f"found WhatsApp ws url via fast scan")
+        return url
+    except ImportError:
+        # Fallback if cdp_utils not available
+        pass
     ports_to_try = [PORT] + [p for p in range(PORT, PORT + 20) if p != PORT]
     for port in ports_to_try:
         try:

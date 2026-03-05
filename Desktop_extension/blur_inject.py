@@ -93,8 +93,15 @@ STATUS_JS = """
 
 
 def get_ws_url(port):
-    """Get WebSocket debugger URL, scanning ports to find WhatsApp."""
-    # Try configured port and nearby ports
+    """Get WebSocket debugger URL using fast parallel scan."""
+    try:
+        from cdp_utils import find_whatsapp_ws_url
+        url = find_whatsapp_ws_url(preferred_port=port)
+        if url:
+            return url
+    except ImportError:
+        pass
+    # Fallback: sequential scan
     ports_to_try = [port] + [p for p in range(port, port + 10) if p != port]
     for p in ports_to_try:
         try:
@@ -107,17 +114,6 @@ def get_ws_url(port):
                         return page.get("webSocketDebuggerUrl", "")
         except Exception:
             continue
-    # Fallback: configured port, any page
-    try:
-        url = f"http://localhost:{port}/json"
-        req = urllib.request.Request(url, headers={"Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=2) as resp:
-            pages = json.loads(resp.read().decode())
-            for page in pages:
-                if page.get("type") == "page":
-                    return page.get("webSocketDebuggerUrl", "")
-    except Exception as e:
-        print(f"ERROR: Cannot connect to CDP on port {port}: {e}", file=sys.stderr)
     return ""
 
 
