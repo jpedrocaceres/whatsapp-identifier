@@ -51,9 +51,13 @@ extension/
 - Python 3 (para Privacy Blur e GUI de configuracoes)
 - Pacote `websockets` (`pip install websockets`)
 
+### Download
+
+Baixe o instalador na pagina de [Releases](../../releases/latest).
+
 ### Instalacao
 
-Execute o instalador `WAIdentifier_Setup_v*.exe` ou rode o script `Build-Installer.ps1` para gerar um novo instalador.
+Execute o instalador `WAIdentifier_Setup_v*.exe` baixado da pagina de Releases.
 
 O instalador:
 - Copia os arquivos necessarios para `%LocalAppData%\WhatsAppIdentifier`
