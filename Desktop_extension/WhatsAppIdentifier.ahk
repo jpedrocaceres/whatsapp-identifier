@@ -293,6 +293,23 @@ StartDaemon() {
             g_daemonPID := 0
         }
     }
+    ; Check if daemon died immediately (e.g. missing websockets)
+    if (g_daemonPID)
+        SetTimer(CheckDaemonAlive, -3000)
+}
+
+CheckDaemonAlive() {
+    global g_daemonPID
+    if (g_daemonPID && !ProcessExist(g_daemonPID)) {
+        g_daemonPID := 0
+        ; Check status file for specific error
+        statusFile := A_ScriptDir "\blur_status.txt"
+        status := ""
+        try status := FileRead(statusFile)
+        if (InStr(status, "error_no_websockets")) {
+            MsgBox("O blur de privacidade nao pode iniciar porque o modulo 'websockets' nao esta instalado.`n`nAbra o terminal e execute:`npython -m pip install websockets`n`nDepois reinicie o WhatsApp Identifier.", "WhatsApp Identifier - Erro", 48)
+        }
+    }
 }
 
 StopDaemon() {

@@ -23,6 +23,20 @@ import urllib.request
 try:
     import websockets
 except ImportError:
+    # Log the error before exiting so the user/developer can diagnose
+    _log_path = os.path.join(
+        os.path.dirname(os.path.abspath(sys.argv[0])), "blur_daemon.log"
+    )
+    _status_path = os.path.join(
+        os.path.dirname(os.path.abspath(sys.argv[0])), "blur_status.txt"
+    )
+    try:
+        with open(_log_path, "a") as _f:
+            _f.write(f"{__import__('time').strftime('%H:%M:%S')} FATAL: websockets module not installed. Run: python -m pip install websockets\n")
+        with open(_status_path, "w") as _f:
+            _f.write("error_no_websockets")
+    except Exception:
+        pass
     sys.exit(1)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))

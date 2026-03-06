@@ -244,8 +244,8 @@ if (!$pyFound) {
 Log "Verificando/instalando modulo websockets..."
 $wsInstalled = $false
 
-# Tenta com pythonw primeiro, depois python
-foreach ($pyCmd in @("pythonw", "python")) {
+# Tenta com python primeiro (mais confiavel que pythonw para verificacao)
+foreach ($pyCmd in @("python", "pythonw")) {
     try {
         $pipCheck = & $pyCmd -c "import websockets; print('ok')" 2>&1 | Out-String
         if ($pipCheck -match "ok") {
@@ -258,11 +258,11 @@ foreach ($pyCmd in @("pythonw", "python")) {
 
 if (!$wsInstalled) {
     Log "websockets nao encontrado, instalando..."
-    # Tenta pip install com ambos os comandos
-    foreach ($pyCmd in @("pythonw", "python")) {
+    # Tenta pip install com --user flag para garantir instalacao no perfil do usuario
+    foreach ($pyCmd in @("python", "pythonw")) {
         try {
-            $pipOut = & $pyCmd -m pip install websockets --quiet 2>&1 | Out-String
-            Log "pip install websockets ($pyCmd): $($pipOut.Trim())"
+            $pipOut = & $pyCmd -m pip install websockets --user --quiet 2>&1 | Out-String
+            Log "pip install websockets ($pyCmd --user): $($pipOut.Trim())"
             # Verifica se instalou
             $check2 = & $pyCmd -c "import websockets; print('ok')" 2>&1 | Out-String
             if ($check2 -match "ok") {
@@ -276,6 +276,12 @@ if (!$wsInstalled) {
     }
     if (!$wsInstalled) {
         Log "AVISO: nao foi possivel instalar websockets com nenhum comando Python"
+        [System.Windows.Forms.MessageBox]::Show(
+            "Nao foi possivel instalar o modulo 'websockets'.`nO blur de privacidade nao funcionara.`n`nAbra o terminal e execute manualmente:`npython -m pip install websockets",
+            "WhatsApp Identifier - Aviso",
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
     }
 }
 
@@ -303,7 +309,7 @@ try {
     $regUni = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\WhatsAppIdentifier"
     if (!(Test-Path $regUni)) { New-Item $regUni -Force | Out-Null }
     Set-ItemProperty $regUni "DisplayName"     "WhatsApp Identifier"
-    Set-ItemProperty $regUni "DisplayVersion"  "3.5.1"
+    Set-ItemProperty $regUni "DisplayVersion"  "3.5.2"
     Set-ItemProperty $regUni "Publisher"       "JoaoPedro"
     Set-ItemProperty $regUni "InstallLocation" $installDir
     Set-ItemProperty $regUni "NoModify"        1 -Type DWord
@@ -367,7 +373,7 @@ Log "========== INSTALACAO FINALIZADA =========="
     Write-Host "Script de instalacao gerado: WhatsAppIdentifier_Setup.ps1" -ForegroundColor Green
 
     # Tenta instalar ps2exe e converter para .exe
-    $setupExe = Join-Path $src "WAIdentifier_Setup_v3.5.1.exe"
+    $setupExe = Join-Path $src "WAIdentifier_Setup_v3.5.2.exe"
     $converted = $false
 
     try {
