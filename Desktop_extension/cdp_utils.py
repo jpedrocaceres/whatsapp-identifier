@@ -11,7 +11,7 @@ import json
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-DEFAULT_PORT_RANGE = (9222, 9270)
+DEFAULT_PORT_RANGE = (9222, 9400)
 
 
 def _is_port_open(port, timeout=0.15):
@@ -64,7 +64,8 @@ def find_whatsapp_port(preferred_port=None, port_range=DEFAULT_PORT_RANGE):
     if preferred_port and _is_port_open(preferred_port):
         pages = _query_cdp_pages(preferred_port)
         for p in pages:
-            if p.get("type") == "page" and "whatsapp" in p.get("url", "").lower():
+            url = p.get("url", "").lower()
+            if p.get("type") == "page" and ("whatsapp" in url or url.startswith("chrome-error://")):
                 return preferred_port, pages
 
     # Parallel scan for open ports

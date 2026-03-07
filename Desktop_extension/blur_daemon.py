@@ -43,7 +43,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
 CMD_FILE = os.path.join(SCRIPT_DIR, "blur_cmd.txt")
 STATUS_FILE = os.path.join(SCRIPT_DIR, "blur_status.txt")
 LOG_FILE = os.path.join(SCRIPT_DIR, "blur_daemon.log")
-PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 9251
+PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 9387
 
 
 def log(msg):
@@ -174,7 +174,8 @@ def find_whatsapp_ws_url():
 
 
 async def verify_whatsapp_page(ws):
-    """Verify the WebSocket is connected to a WhatsApp page."""
+    """Verify the WebSocket is connected to a WhatsApp page.
+    Returns: 'whatsapp' if confirmed, 'loading' if chrome-error (still loading), or False."""
     try:
         await ws.send(json.dumps({
             "id": 99, "method": "Runtime.evaluate",
@@ -183,9 +184,14 @@ async def verify_whatsapp_page(ws):
         response = await asyncio.wait_for(ws.recv(), timeout=3)
         data = json.loads(response)
         page_url = data.get("result", {}).get("result", {}).get("value", "")
-        is_wa = "whatsapp" in page_url.lower()
-        log(f"page verify: url={page_url}, is_whatsapp={is_wa}")
-        return is_wa
+        if "whatsapp" in page_url.lower():
+            log(f"page verify: url={page_url}, is_whatsapp=True")
+            return "whatsapp"
+        if page_url.startswith("chrome-error://"):
+            log(f"page verify: url={page_url}, still loading")
+            return "loading"
+        log(f"page verify: url={page_url}, is_whatsapp=False")
+        return False
     except Exception as e:
         log(f"page verify error: {e}")
         return False
@@ -276,7 +282,8 @@ async def run_daemon():
                             timeout=5
                         )
                         # Verify this is actually WhatsApp
-                        if await verify_whatsapp_page(ws):
+                        page_status = await verify_whatsapp_page(ws)
+                        if page_status == "whatsapp":
                             connected = True
                             log("connected to WhatsApp ok")
                             write_status("connected")
@@ -284,6 +291,14 @@ async def run_daemon():
                             if not pending_cmd and blur_was_on:
                                 pending_cmd = f"inject {last_blur_px}"
                                 log(f"auto-queuing inject after connect")
+                        elif page_status == "loading":
+                            # WhatsApp is still loading, close and retry soon
+                            log("WhatsApp still loading, will retry")
+                            await ws.close()
+                            ws = None
+                            connected = False
+                            write_status("loading")
+                            retry_connect_interval = 15  # retry in ~500ms
                         else:
                             log("connected but NOT WhatsApp page, closing")
                             await ws.close()

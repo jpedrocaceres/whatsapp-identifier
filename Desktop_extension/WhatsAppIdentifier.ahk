@@ -29,7 +29,7 @@ global g_idleEnabled    := false
 global g_idleSeconds    := 30
 global g_blurActive     := false
 global g_lastMouseMove  := A_TickCount
-global g_debugPort      := 9251
+global g_debugPort      := 9387
 global g_cdpWsUrl       := ""
 global g_overlayOpacity := 200
 global g_overlayColor   := "1A1A2E"
@@ -264,17 +264,22 @@ ReadPrivacyConfig() {
 LaunchWhatsAppWithCDP() {
     global g_debugPort, g_privEnabled
 
-    ; Set env var so WhatsApp (and other WebView2 apps) get CDP port
-    if (g_privEnabled) {
-        envVal := "--remote-debugging-port=" g_debugPort
-        EnvSet("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", envVal)
-    }
-
     ; Launch WhatsApp if not already running
     if !WinExist("ahk_exe WhatsApp.Root.exe") {
+        ; Set env var ONLY while launching WhatsApp, then clear it
+        ; so other WebView2 apps (Teams, etc.) are not affected
+        if (g_privEnabled) {
+            envVal := "--remote-debugging-port=" g_debugPort
+            EnvSet("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", envVal)
+        }
+
         try Run("explorer.exe shell:AppsFolder\5319275A.WhatsAppDesktop_cv1g1gvanyjgm!App")
         WinWait("ahk_exe WhatsApp.Root.exe",, 20)
         Sleep 5000
+
+        ; Clear the env var so it doesn't leak to other apps
+        if (g_privEnabled)
+            EnvSet("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "")
     }
 }
 

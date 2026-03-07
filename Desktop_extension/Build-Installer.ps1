@@ -285,14 +285,19 @@ if (!$wsInstalled) {
     }
 }
 
-# ── Configurar WebView2 debug port (necessario para blur CSS) ─────
-Log "Configurando WebView2 debug port..."
+# ── Limpar env var global WebView2 (versoes anteriores setavam isso) ──
+Log "Limpando env var WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (se existir)..."
 try {
     $envName = "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"
-    [Environment]::SetEnvironmentVariable($envName, "--remote-debugging-port=9251", "User")
-    Log "WebView2 debug port configurado: --remote-debugging-port=9251"
+    $existing = [Environment]::GetEnvironmentVariable($envName, "User")
+    if ($existing) {
+        [Environment]::SetEnvironmentVariable($envName, $null, "User")
+        Log "Env var removida (era: $existing). O AHK agora seta apenas para o WhatsApp."
+    } else {
+        Log "Env var nao existia, ok"
+    }
 } catch {
-    Log "AVISO: nao foi possivel configurar WebView2 debug port: $($_.Exception.Message)"
+    Log "AVISO: nao foi possivel limpar env var: $($_.Exception.Message)"
 }
 
 # ── Registro: Startup ──────────────────────────────────────────────
@@ -309,7 +314,7 @@ try {
     $regUni = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\WhatsAppIdentifier"
     if (!(Test-Path $regUni)) { New-Item $regUni -Force | Out-Null }
     Set-ItemProperty $regUni "DisplayName"     "WhatsApp Identifier"
-    Set-ItemProperty $regUni "DisplayVersion"  "3.5.2"
+    Set-ItemProperty $regUni "DisplayVersion"  "3.6.0"
     Set-ItemProperty $regUni "Publisher"       "JoaoPedro"
     Set-ItemProperty $regUni "InstallLocation" $installDir
     Set-ItemProperty $regUni "NoModify"        1 -Type DWord
@@ -373,7 +378,7 @@ Log "========== INSTALACAO FINALIZADA =========="
     Write-Host "Script de instalacao gerado: WhatsAppIdentifier_Setup.ps1" -ForegroundColor Green
 
     # Tenta instalar ps2exe e converter para .exe
-    $setupExe = Join-Path $src "WAIdentifier_Setup_v3.5.2.exe"
+    $setupExe = Join-Path $src "WAIdentifier_Setup_v3.6.0.exe"
     $converted = $false
 
     try {
