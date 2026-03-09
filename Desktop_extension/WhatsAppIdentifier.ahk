@@ -1,5 +1,5 @@
-﻿;@Ahk2Exe-SetProductVersion 3.6.0
-;@Ahk2Exe-SetFileVersion 3.6.0
+﻿;@Ahk2Exe-SetProductVersion 3.6.1
+;@Ahk2Exe-SetFileVersion 3.6.1
 ;@Ahk2Exe-SetProductName WhatsApp Identifier
 ;@Ahk2Exe-SetDescription WhatsApp Identifier - Desktop
 
@@ -88,11 +88,13 @@ OnEnter() {
     savedClip := ClipboardAll()
     A_Clipboard := ""
 
+    ; Selecionar todo o texto do campo de entrada
     Send "^a"
-    Sleep 15
+    Sleep 50
     Send "^c"
 
-    if !ClipWait(0.5) {
+    if !ClipWait(1.0) {
+        ; Campo vazio — envia Enter normal
         A_Clipboard := savedClip
         g_busy := false
         Send "{Enter}"
@@ -108,6 +110,7 @@ OnEnter() {
         return
     }
 
+    ; Já tem prefixo — só envia
     if (SubStr(currentText, 1, StrLen(prefix)) = prefix) {
         A_Clipboard := savedClip
         g_busy := false
@@ -115,10 +118,11 @@ OnEnter() {
         return
     }
 
+    ; Montar texto com prefixo e colar
     newText := prefix "`n" currentText
     A_Clipboard := newText
 
-    if !ClipWait(0.3) {
+    if !ClipWait(0.5) {
         A_Clipboard := savedClip
         g_busy := false
         Send "{Enter}"
@@ -126,40 +130,80 @@ OnEnter() {
     }
 
     Send "^a"
-    Sleep 15
+    Sleep 50
     Send "{Delete}"
-    Sleep 30
+    Sleep 80
     Send "^v"
-    Sleep 60
+    Sleep 150
 
+    ; Verificar se colou certo (tentar até 2x)
+    pasteOk := false
+    Loop 2 {
+        A_Clipboard := ""
+        Send "^a"
+        Sleep 50
+        Send "^c"
+
+        if ClipWait(1.0) {
+            pastedText := Trim(A_Clipboard)
+            if (SubStr(pastedText, 1, StrLen(prefix)) = prefix) {
+                pasteOk := true
+                break
+            }
+        }
+        ; Se não verificou, esperar e tentar de novo
+        Sleep 100
+    }
+
+    if (pasteOk) {
+        A_Clipboard := savedClip
+        Send "{Enter}"
+        Sleep 50
+        SetTimer(() => (g_busy := false), -300)
+        return
+    }
+
+    ; Falha — tentar uma última vez: limpar campo e colar de novo
+    A_Clipboard := newText
+    ClipWait(0.5)
+    Send "^a"
+    Sleep 50
+    Send "{Delete}"
+    Sleep 100
+    Send "^v"
+    Sleep 200
+
+    ; Verificar mais uma vez
     A_Clipboard := ""
     Send "^a"
-    Sleep 15
+    Sleep 50
     Send "^c"
 
-    if ClipWait(0.3) {
+    if ClipWait(1.0) {
         pastedText := Trim(A_Clipboard)
         if (SubStr(pastedText, 1, StrLen(prefix)) = prefix) {
             A_Clipboard := savedClip
             Send "{Enter}"
-            Sleep 30
+            Sleep 50
             SetTimer(() => (g_busy := false), -300)
             return
         }
     }
 
+    ; Falha definitiva — restaurar texto original sem prefixo
     A_Clipboard := currentText
-    ClipWait(0.3)
+    ClipWait(0.5)
     Send "^a"
-    Sleep 15
+    Sleep 50
     Send "{Delete}"
-    Sleep 30
+    Sleep 100
     Send "^v"
-    Sleep 60
+    Sleep 150
 
     A_Clipboard := savedClip
     g_busy := false
-    MsgBox("Não foi possível inserir o prefixo. Tente novamente.", "WhatsApp Identifier", 48)
+    ToolTip("Não foi possível inserir o prefixo.")
+    SetTimer(() => ToolTip(), -3000)
 }
 
 ; ─── GUI de Configuração (Python) ──────────────────────────────────
