@@ -150,7 +150,7 @@ def main():
 
     action = sys.argv[1].lower()
     blur_px = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2].isdigit() else 8
-    port = int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3].isdigit() else 9251
+    port = int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3].isdigit() else 9351
 
     if not HAS_WEBSOCKETS:
         print("ERROR: websockets module required. Run: pip install websockets", file=sys.stderr)

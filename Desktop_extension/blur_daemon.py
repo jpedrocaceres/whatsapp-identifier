@@ -43,7 +43,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
 CMD_FILE = os.path.join(SCRIPT_DIR, "blur_cmd.txt")
 STATUS_FILE = os.path.join(SCRIPT_DIR, "blur_status.txt")
 LOG_FILE = os.path.join(SCRIPT_DIR, "blur_daemon.log")
-PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 9387
+PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 9351
 
 
 def log(msg):

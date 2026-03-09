@@ -77,7 +77,7 @@ def read_config():
     hide_on_focus = config.get("Privacy", "HideOnFocus", fallback="1") == "1"
     idle_enabled = config.get("Privacy", "IdleBlurEnabled", fallback="0") == "1"
     idle_seconds = int(config.get("Privacy", "IdleBlurSeconds", fallback="30"))
-    debug_port = int(config.get("Privacy", "DebugPort", fallback="9251"))
+    debug_port = int(config.get("Privacy", "DebugPort", fallback="9351"))
 
     return {
         "name": name, "active": active,

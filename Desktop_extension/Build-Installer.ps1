@@ -289,13 +289,8 @@ if (!$wsInstalled) {
 Log "Limpando env var WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (se existir)..."
 try {
     $envName = "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"
-    $existing = [Environment]::GetEnvironmentVariable($envName, "User")
-    if ($existing) {
-        [Environment]::SetEnvironmentVariable($envName, $null, "User")
-        Log "Env var removida (era: $existing). O AHK agora seta apenas para o WhatsApp."
-    } else {
-        Log "Env var nao existia, ok"
-    }
+    [Environment]::SetEnvironmentVariable($envName, "--remote-debugging-port=9351", "User")
+    Log "WebView2 debug port configurado: --remote-debugging-port=9351"
 } catch {
     Log "AVISO: nao foi possivel limpar env var: $($_.Exception.Message)"
 }

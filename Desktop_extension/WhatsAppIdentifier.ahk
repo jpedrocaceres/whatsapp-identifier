@@ -1,3 +1,8 @@
+﻿;@Ahk2Exe-SetProductVersion 3.6.0
+;@Ahk2Exe-SetFileVersion 3.6.0
+;@Ahk2Exe-SetProductName WhatsApp Identifier
+;@Ahk2Exe-SetDescription WhatsApp Identifier - Desktop
+
 /**
  * WhatsApp Identifier - Desktop (AutoHotkey v2)
  *
@@ -29,7 +34,7 @@ global g_idleEnabled    := false
 global g_idleSeconds    := 30
 global g_blurActive     := false
 global g_lastMouseMove  := A_TickCount
-global g_debugPort      := 9387
+global g_debugPort      := 9351
 global g_cdpWsUrl       := ""
 global g_overlayOpacity := 200
 global g_overlayColor   := "1A1A2E"
@@ -257,22 +262,42 @@ ReadPrivacyConfig() {
     g_hideOnFocus    := IniRead(CFG_FILE, "Privacy", "HideOnFocus",    "1") = "1"
     g_idleEnabled    := IniRead(CFG_FILE, "Privacy", "IdleBlurEnabled", "0") = "1"
     g_idleSeconds    := Integer(IniRead(CFG_FILE, "Privacy", "IdleBlurSeconds", "30"))
-    g_debugPort      := Integer(IniRead(CFG_FILE, "Privacy", "DebugPort", "9251"))
+    g_debugPort      := Integer(IniRead(CFG_FILE, "Privacy", "DebugPort", "9351"))
 }
 
 ; ─── Launch WhatsApp if not running ────────────────────────────────
 LaunchWhatsAppWithCDP() {
     global g_debugPort, g_privEnabled
 
-    ; Launch WhatsApp if not already running
-    if !WinExist("ahk_exe WhatsApp.Root.exe") {
-        ; Set env var ONLY while launching WhatsApp, then clear it
-        ; so other WebView2 apps (Teams, etc.) are not affected
-        if (g_privEnabled) {
-            envVal := "--remote-debugging-port=" g_debugPort
-            EnvSet("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", envVal)
-        }
+    envVal := "--remote-debugging-port=" g_debugPort
 
+    if (g_privEnabled) {
+        ; Set env var for this process (affects child processes)
+        EnvSet("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", envVal)
+
+        ; Also persist in user registry so it works on autostart
+        try RunWait('reg add "HKCU\Environment" /v WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS /t REG_SZ /d "' envVal '" /f',, "Hide")
+    }
+
+    wasRunning := WinExist("ahk_exe WhatsApp.Root.exe")
+
+    if (wasRunning && g_privEnabled) {
+        ; WhatsApp is running — check if CDP is active on our port
+        cdpOk := CheckCDPActive()
+
+        if (!cdpOk) {
+            ; WhatsApp running without CDP — need to restart it
+            ToolTip("Reiniciando WhatsApp com debug ativo...")
+            WinClose("ahk_exe WhatsApp.Root.exe")
+            WinWaitClose("ahk_exe WhatsApp.Root.exe",, 10)
+            Sleep 2000
+            try Run("explorer.exe shell:AppsFolder\5319275A.WhatsAppDesktop_cv1g1gvanyjgm!App")
+            WinWait("ahk_exe WhatsApp.Root.exe",, 20)
+            Sleep 5000
+            SetTimer(() => ToolTip(), -1000)
+        }
+    } else if (!wasRunning) {
+        ; WhatsApp not running — launch it
         try Run("explorer.exe shell:AppsFolder\5319275A.WhatsAppDesktop_cv1g1gvanyjgm!App")
         WinWait("ahk_exe WhatsApp.Root.exe",, 20)
         Sleep 5000
@@ -281,6 +306,23 @@ LaunchWhatsAppWithCDP() {
         if (g_privEnabled)
             EnvSet("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "")
     }
+}
+
+; ─── Check if WhatsApp CDP is active ──────────────────────────────
+CheckCDPActive() {
+    global g_debugPort
+    pyCheck := A_ScriptDir "\cdp_check.py"
+    try {
+        exitCode := RunWait("python " '"' pyCheck '" ' g_debugPort, A_ScriptDir, "Hide")
+        if (exitCode = 0)
+            return true
+    }
+    try {
+        exitCode := RunWait("pythonw " '"' pyCheck '" ' g_debugPort, A_ScriptDir, "Hide")
+        if (exitCode = 0)
+            return true
+    }
+    return false
 }
 
 ; ─── Daemon management ──────────────────────────────────────────────
