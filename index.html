@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Política de Privacidade / Privacy Policy — WhatsApp Identifier" />
+  <title>Privacy Policy – WhatsApp Identifier</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f5f7fa;
+      color: #222;
+      line-height: 1.7;
+    }
+    header {
+      background: #075e54;
+      color: white;
+      padding: 36px 24px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.8rem; margin-bottom: 6px; }
+    header p { font-size: 0.95rem; opacity: 0.85; }
+    .lang-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .lang-toggle button {
+      padding: 8px 24px;
+      border: 2px solid #075e54;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      background: white;
+      color: #075e54;
+      transition: all 0.2s;
+    }
+    .lang-toggle button.active {
+      background: #075e54;
+      color: white;
+    }
+    .container {
+      max-width: 820px;
+      margin: 32px auto;
+      padding: 0 20px 60px;
+    }
+    .section {
+      background: white;
+      border-radius: 10px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+    }
+    .section h2 {
+      font-size: 1.1rem;
+      color: #075e54;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e8f5e9;
+    }
+    .section p { font-size: 0.95rem; margin-bottom: 10px; }
+    .section ul { padding-left: 20px; margin-top: 6px; }
+    .section ul li { font-size: 0.95rem; margin-bottom: 6px; }
+    .badge {
+      display: inline-block;
+      background: #e8f5e9;
+      color: #2e7d32;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 12px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .updated {
+      text-align: center;
+      font-size: 0.82rem;
+      color: #888;
+      margin-top: 32px;
+    }
+    [data-lang-section] { display: none; }
+    [data-lang-section].visible { display: block; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Privacy Policy <span style="opacity:0.7;font-size:1rem;">/ Política de Privacidade</span></h1>
+  <p>WhatsApp Identifier — Chrome Extension</p>
+</header>
+
+<nav class="lang-toggle" aria-label="Seletor de idioma / Language selector">
+  <button class="active" aria-current="true" onclick="setLang('pt')">Português</button>
+  <button onclick="setLang('en')">English</button>
+</nav>
+
+<div class="container">
+
+  <!-- ===== PORTUGUES ===== -->
+  <div data-lang-section="pt" class="visible">
+
+    <div class="section">
+      <h2>1. Visão Geral</h2>
+      <p>Esta Política de Privacidade descreve como a extensão <strong>WhatsApp Identifier</strong> coleta, usa e protege as informações dos usuários. O desenvolvedor desta extensão é <strong>João Pedro Cáceres</strong>, pessoa física.</p>
+      <p>Esta extensão foi projetada com <strong>privacidade por padrão</strong>: não coleta, armazena nem transmite qualquer dado pessoal para servidores externos.</p>
+    </div>
+
+    <div class="section">
+      <h2>2. Dados Coletados <span class="badge">Nenhum dado externo</span></h2>
+      <p>Esta extensão <strong>não coleta</strong> nenhum dos seguintes tipos de dados:</p>
+      <ul>
+        <li>Informações de identificação pessoal</li>
+        <li>Conteúdo de mensagens do WhatsApp</li>
+        <li>Histórico de navegação</li>
+        <li>Dados de localização</li>
+        <li>Informações financeiras ou de saúde</li>
+        <li>Comunicações pessoais</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>3. Uso das Permissões</h2>
+      <p><strong>Permissão de host (<code>web.whatsapp.com</code>):</strong> Utilizada exclusivamente para injetar um script de conteúdo na interface do WhatsApp Web, permitindo detectar e modificar o campo de texto de mensagens para prefixar automaticamente o nome configurado pelo usuário.</p>
+      <p><strong>Permissão <code>tabs</code>:</strong> Utilizada para recarregar a aba do WhatsApp Web quando necessário e sincronizar o estado da extensão com a aba ativa. Nenhuma informação sobre outras abas ou sites é acessada.</p>
+      <p><strong>Permissão <code>storage</code>:</strong> Utilizada para salvar localmente as preferências do usuário (nome/prefixo e configurações de privacidade) via <code>chrome.storage.local</code>. Os dados ficam armazenados apenas no dispositivo do usuário e nunca são enviados a servidores externos.</p>
+    </div>
+
+    <div class="section">
+      <h2>4. Funcionalidade Privacy Blur</h2>
+      <p>A extensão oferece uma funcionalidade opcional de <strong>desfoque de privacidade</strong> que aplica um filtro CSS sobre nomes e mensagens na interface do WhatsApp Web. Este recurso:</p>
+      <ul>
+        <li>Opera inteiramente no navegador do usuário, sem enviar dados a servidores</li>
+        <li>Pode ser ativado ou desativado a qualquer momento pelo usuário</li>
+        <li>Não altera, intercepta ou armazena o conteúdo das mensagens</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>5. Armazenamento de Dados</h2>
+      <p>Os únicos dados armazenados pela extensão são as <strong>preferências de configuração do usuário</strong> (nome/prefixo e estado do Privacy Blur), salvos localmente no navegador Chrome. Esses dados:</p>
+      <ul>
+        <li>Permanecem exclusivamente no dispositivo do usuário</li>
+        <li>Não são transmitidos a nenhum servidor</li>
+        <li>Podem ser removidos a qualquer momento desinstalando a extensão</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>6. Compartilhamento de Dados</h2>
+      <p>Nenhum dado é compartilhado com terceiros. A extensão não utiliza serviços de análise, rastreamento, publicidade ou qualquer outro serviço externo.</p>
+    </div>
+
+    <div class="section">
+      <h2>7. Alterações a Esta Política</h2>
+      <p>Eventuais atualizações a esta política serão publicadas nesta mesma página. Recomendamos revisar esta política periodicamente.</p>
+    </div>
+
+    <div class="section">
+      <h2>8. Contato</h2>
+      <p>Para dúvidas sobre esta Política de Privacidade, entre em contato pelo e-mail cadastrado na conta de desenvolvedor Google associada a esta extensão.</p>
+    </div>
+
+  </div>
+
+  <!-- ===== ENGLISH ===== -->
+  <div data-lang-section="en">
+
+    <div class="section">
+      <h2>1. Overview</h2>
+      <p>This Privacy Policy describes how the <strong>WhatsApp Identifier</strong> Chrome extension handles user information. The developer of this extension is <strong>João Pedro Cáceres</strong>, an individual developer.</p>
+      <p>This extension is built with <strong>privacy by default</strong>: it does not collect, store, or transmit any personal data to external servers.</p>
+    </div>
+
+    <div class="section">
+      <h2>2. Data Collected <span class="badge">No external data</span></h2>
+      <p>This extension does <strong>not collect</strong> any of the following:</p>
+      <ul>
+        <li>Personally identifiable information</li>
+        <li>WhatsApp message content</li>
+        <li>Browsing history</li>
+        <li>Location data</li>
+        <li>Financial or health information</li>
+        <li>Personal communications</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>3. Permission Usage</h2>
+      <p><strong>Host permission (<code>web.whatsapp.com</code>):</strong> Used exclusively to inject a content script into the WhatsApp Web interface, enabling the extension to detect and modify the message input field in order to automatically prepend the user-configured name prefix.</p>
+      <p><strong><code>tabs</code> permission:</strong> Used to reload the WhatsApp Web tab when necessary and synchronize the extension state with the active tab. No information from other tabs or websites is accessed.</p>
+      <p><strong><code>storage</code> permission:</strong> Used to locally save the user's preferences (name/prefix and privacy settings) via <code>chrome.storage.local</code>. This data is stored only on the user's device and is never sent to any external server.</p>
+    </div>
+
+    <div class="section">
+      <h2>4. Privacy Blur Feature</h2>
+      <p>The extension offers an optional <strong>privacy blur</strong> feature that applies a CSS blur filter over names and messages in the WhatsApp Web interface. This feature:</p>
+      <ul>
+        <li>Operates entirely within the user's browser, without sending data to any server</li>
+        <li>Can be enabled or disabled at any time by the user</li>
+        <li>Does not alter, intercept, or store message content</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>5. Data Storage</h2>
+      <p>The only data stored by this extension is the <strong>user's configuration preferences</strong> (name/prefix and Privacy Blur state), saved locally in the Chrome browser. This data:</p>
+      <ul>
+        <li>Remains exclusively on the user's device</li>
+        <li>Is never transmitted to any server</li>
+        <li>Can be removed at any time by uninstalling the extension</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>6. Data Sharing</h2>
+      <p>No data is shared with third parties. The extension does not use analytics, tracking, advertising, or any other external service.</p>
+    </div>
+
+    <div class="section">
+      <h2>7. Changes to This Policy</h2>
+      <p>Any updates to this policy will be published on this same page. We recommend reviewing this policy periodically.</p>
+    </div>
+
+    <div class="section">
+      <h2>8. Contact</h2>
+      <p>For questions about this Privacy Policy, please contact us via the email address registered on the Google developer account associated with this extension.</p>
+    </div>
+
+  </div>
+
+  <p class="updated">Última atualização / Last updated: March 2026</p>
+
+</div>
+
+<script>
+  function setLang(lang) {
+    document.querySelectorAll('[data-lang-section]').forEach(function(el) {
+      el.classList.toggle('visible', el.getAttribute('data-lang-section') === lang);
+    });
+    document.querySelectorAll('.lang-toggle button').forEach(function(btn) {
+      var isPt = lang === 'pt' && btn.textContent.includes('Portugu\u00eas');
+      var isEn = lang === 'en' && btn.textContent.includes('English');
+      var isActive = isPt || isEn;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-current', isActive ? 'true' : 'false');
+    });
+    document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en';
+  }
+</script>
+
+</body>
+</html>
