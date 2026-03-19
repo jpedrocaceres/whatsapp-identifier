@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const charCount      = document.getElementById('charCount');
   const toggleSubtitle = document.getElementById('toggleSubtitle');
   const chatBubbleWrap = document.getElementById('chatBubbleWrap');
+  const headerStatus   = document.getElementById('headerStatus');
+  const statusDot      = document.getElementById('statusDot');
 
   // Privacy elements
   const togglePrivacy    = document.getElementById('togglePrivacy');
@@ -28,11 +30,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Privacy
     togglePrivacy.checked = result.waPrivacyEnabled || false;
     blurIntensity.value   = result.waBlurIntensity  || 8;
-    blurValue.textContent = blurIntensity.value;
+    blurValue.textContent = blurIntensity.value + 'px';
 
     updatePreview();
     updateCharCount();
     updatePrivacyUI();
+    updateHeaderBadge();
   });
 
   usernameInput.addEventListener('input', () => {
@@ -40,13 +43,22 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCharCount();
   });
 
-  toggleActive.addEventListener('change', updatePreview);
+  toggleActive.addEventListener('change', () => {
+    updatePreview();
+    updateHeaderBadge();
+  });
 
   // Privacy listeners
   togglePrivacy.addEventListener('change', updatePrivacyUI);
   blurIntensity.addEventListener('input', () => {
-    blurValue.textContent = blurIntensity.value;
+    blurValue.textContent = blurIntensity.value + 'px';
   });
+
+  function updateHeaderBadge() {
+    const on = toggleActive.checked;
+    headerStatus.textContent = on ? 'Ativo' : 'Inativo';
+    statusDot.style.background = on ? '#4ADE80' : '#8696A0';
+  }
 
   function updatePrivacyUI() {
     const on = togglePrivacy.checked;
@@ -102,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
       waPrivacyEnabled:   privacyEnabled,
       waBlurIntensity:    blur,
     }, () => {
-      showStatus(`✓ Configuração salva`);
+      showStatus('Configuração salva com sucesso');
 
       chrome.tabs.query({ url: 'https://web.whatsapp.com/*' }, (tabs) => {
         tabs.forEach((tab) => {
@@ -131,6 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
     status.className   = `status ${isError ? 'error' : ''}`;
     setTimeout(() => {
       status.className = 'status hidden';
-    }, 2000);
+    }, 2500);
   }
 });

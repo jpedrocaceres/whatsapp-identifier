@@ -146,16 +146,28 @@ def write_status(status):
 
 
 def find_whatsapp_ws_url():
-    """Find WhatsApp's WebSocket debugger URL using fast parallel scan."""
+    """Find WhatsApp's WebSocket debugger URL using process-based discovery + scan fallback."""
     try:
-        from cdp_utils import find_whatsapp_ws_url as _find
+        from cdp_utils import find_whatsapp_cdp_port_by_process, find_whatsapp_ws_url as _find
+
+        # Layer 1: Process-based discovery (most reliable)
+        process_port = find_whatsapp_cdp_port_by_process()
+        if process_port:
+            log(f"process discovery found WhatsApp CDP on port {process_port}")
+            url = _find(preferred_port=process_port)
+            if url:
+                return url
+
+        # Layer 2: Full scan fallback
         url = _find(preferred_port=PORT)
         if url:
-            log(f"found WhatsApp ws url via fast scan")
-        return url
+            log(f"found WhatsApp ws url via port scan fallback")
+            return url
     except ImportError:
         # Fallback if cdp_utils not available
         pass
+
+    # Manual fallback if cdp_utils entirely unavailable
     ports_to_try = [PORT] + [p for p in range(PORT, PORT + 20) if p != PORT]
     for port in ports_to_try:
         try:
@@ -166,11 +178,21 @@ def find_whatsapp_ws_url():
                     if p.get("type") == "page" and "whatsapp" in p.get("url", "").lower():
                         ws_url = p.get("webSocketDebuggerUrl", "")
                         if ws_url:
-                            log(f"found WhatsApp on port {port}")
+                            log(f"found WhatsApp on port {port} (manual fallback)")
                             return ws_url
         except Exception:
             continue
     return ""
+
+
+def check_whatsapp_cdp_status():
+    """Check if WhatsApp is running and whether CDP is available.
+    Returns: 'connected', 'needs_restart', or 'not_running'."""
+    try:
+        from cdp_utils import diagnose_whatsapp_cdp
+        return diagnose_whatsapp_cdp()
+    except ImportError:
+        return "not_running"
 
 
 async def verify_whatsapp_page(ws):
@@ -214,6 +236,7 @@ async def run_daemon():
         pass
 
     retry_connect_interval = 0  # Counter for connection retries
+    needs_restart_mode = False  # Slow retry when WhatsApp has no CDP
 
     while True:
         # Read command file
@@ -242,6 +265,7 @@ async def run_daemon():
             ws = None
             connected = False
             retry_connect_interval = 0
+            needs_restart_mode = False
             # If blur was on, queue re-inject after reconnect
             if blur_was_on:
                 pending_cmd = f"inject {last_blur_px}"
@@ -269,9 +293,29 @@ async def run_daemon():
         # Ensure connection to WhatsApp
         if not connected or not ws_is_open(ws):
             retry_connect_interval += 1
-            # Don't spam connection attempts — try every ~2 seconds (20 * 100ms)
-            if retry_connect_interval >= 20 or retry_connect_interval == 1:
+            # In needs_restart mode, retry every ~10 seconds (100 * 100ms)
+            # Normal mode: retry every ~2 seconds (20 * 100ms)
+            retry_threshold = 100 if needs_restart_mode else 20
+            if retry_connect_interval >= retry_threshold or retry_connect_interval == 1:
                 retry_connect_interval = 0
+
+                # Diagnose WhatsApp CDP status before attempting connection
+                cdp_status = check_whatsapp_cdp_status()
+                if cdp_status == "needs_restart":
+                    if not needs_restart_mode:
+                        log("WhatsApp running without CDP, needs restart")
+                        needs_restart_mode = True
+                    write_status("needs_restart")
+                    await asyncio.sleep(0.1)
+                    continue
+                elif cdp_status == "not_running":
+                    write_status("no_whatsapp")
+                    needs_restart_mode = False
+                    await asyncio.sleep(0.1)
+                    continue
+                else:
+                    needs_restart_mode = False
+
                 new_url = find_whatsapp_ws_url()
                 if new_url:
                     try:

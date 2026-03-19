@@ -4,10 +4,10 @@ $ErrorActionPreference = 'Stop'
 
 $src = $PSScriptRoot
 
-Write-Host "=== WhatsApp Identifier - Build Instalador ===" -ForegroundColor Cyan
+Write-Host "=== WhatsApp Identifier v4.0 - Build Instalador ===" -ForegroundColor Cyan
 
 # Verifica arquivos necessarios
-$required = @("WhatsAppIdentifier.exe","settings_gui.py","blur_inject.py","blur_daemon.py","cdp_check.py","cdp_utils.py")
+$required = @("WhatsAppIdentifier.exe","settings_gui.py")
 foreach ($f in $required) {
     if (!(Test-Path (Join-Path $src $f))) {
         Write-Host "ERRO: nao encontrado: $f" -ForegroundColor Red
@@ -24,10 +24,7 @@ try {
     # Copia arquivos para pasta temporaria
     Copy-Item (Join-Path $src "WhatsAppIdentifier.exe") $tmp
     Copy-Item (Join-Path $src "settings_gui.py")        $tmp
-    Copy-Item (Join-Path $src "blur_inject.py")         $tmp
-    Copy-Item (Join-Path $src "blur_daemon.py")         $tmp
-    Copy-Item (Join-Path $src "cdp_check.py")           $tmp
-    Copy-Item (Join-Path $src "cdp_utils.py")           $tmp
+    Copy-Item (Join-Path $src "icon.png")               $tmp
 
     # Script de instalacao que sera embutido
     $installCode = @'
@@ -44,12 +41,11 @@ function Log($msg) {
     Add-Content -Path $logFile -Value $line -Encoding UTF8
 }
 
-Log "========== INSTALACAO INICIADA =========="
+Log "========== INSTALACAO v4.0 INICIADA =========="
 Log "Windows: $([Environment]::OSVersion.VersionString)"
 Log "Arch: $env:PROCESSOR_ARCHITECTURE"
 Log "User: $env:USERNAME"
 Log "InstallDir: $installDir"
-Log "TempDir (src): $PSScriptRoot"
 
 # ── Encerra instancia anterior ─────────────────────────────────────
 Log "Encerrando WhatsAppIdentifier se estiver rodando..."
@@ -71,34 +67,28 @@ try {
     Log "ERRO ao copiar settings_gui.py: $($_.Exception.Message)"
 }
 try {
-    Copy-Item (Join-Path $src2 "blur_inject.py") $installDir -Force
-    Log "Copiado: blur_inject.py"
+    Copy-Item (Join-Path $src2 "icon.png") $installDir -Force
+    Log "Copiado: icon.png"
 } catch {
-    Log "ERRO ao copiar blur_inject.py: $($_.Exception.Message)"
+    Log "ERRO ao copiar icon.png: $($_.Exception.Message)"
 }
-try {
-    Copy-Item (Join-Path $src2 "blur_daemon.py") $installDir -Force
-    Log "Copiado: blur_daemon.py"
-} catch {
-    Log "ERRO ao copiar blur_daemon.py: $($_.Exception.Message)"
-}
-try {
-    Copy-Item (Join-Path $src2 "cdp_utils.py") $installDir -Force
-    Log "Copiado: cdp_utils.py"
-} catch {
-    Log "ERRO ao copiar cdp_utils.py: $($_.Exception.Message)"
+
+# ── Remove arquivos de versoes anteriores (blur/CDP) ──────────────
+foreach ($old in @("blur_inject.py","blur_daemon.py","cdp_check.py","cdp_utils.py","blur_cmd.txt","blur_status.txt","blur_daemon.log")) {
+    $oldPath = Join-Path $installDir $old
+    if (Test-Path $oldPath) {
+        Remove-Item $oldPath -Force -ErrorAction SilentlyContinue
+        Log "Removido arquivo antigo: $old"
+    }
 }
 
 # ── Verifica arquivos copiados ─────────────────────────────────────
-$exeExists    = Test-Path (Join-Path $installDir "WhatsAppIdentifier.exe")
-$pyExists     = Test-Path (Join-Path $installDir "settings_gui.py")
-$blurExists   = Test-Path (Join-Path $installDir "blur_inject.py")
-$daemonExists = Test-Path (Join-Path $installDir "blur_daemon.py")
-Log "Verificacao: WhatsAppIdentifier.exe=$exeExists, settings_gui.py=$pyExists, blur_inject.py=$blurExists, blur_daemon.py=$daemonExists"
+$exeExists  = Test-Path (Join-Path $installDir "WhatsAppIdentifier.exe")
+$pyExists   = Test-Path (Join-Path $installDir "settings_gui.py")
+$iconExists = Test-Path (Join-Path $installDir "icon.png")
+Log "Verificacao: WhatsAppIdentifier.exe=$exeExists, settings_gui.py=$pyExists, icon.png=$iconExists"
 
 # ── Python ─────────────────────────────────────────────────────────
-# Nota: Windows 11 tem alias fake "python" que redireciona para Microsoft Store
-# e retorna mensagem de erro sem lancar excecao. Precisamos validar a saida.
 Log "Verificando Python..."
 $pyFound = $false
 try {
@@ -140,43 +130,26 @@ if (!$pyFound) {
 
     $downloaded = $false
 
-    # Tentativa 1: WebClient (mais compativel)
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         Log "Baixando Python via WebClient..."
         $wc = New-Object System.Net.WebClient
         $wc.DownloadFile($pyUrl, $pyInstaller)
         $wc.Dispose()
-        $fileSize = (Get-Item $pyInstaller).Length
-        Log "Download concluido (WebClient). Tamanho: $fileSize bytes"
+        Log "Download concluido (WebClient). Tamanho: $((Get-Item $pyInstaller).Length) bytes"
         $downloaded = $true
     } catch {
         Log "WebClient falhou: $($_.Exception.Message)"
     }
 
-    # Tentativa 2: Invoke-WebRequest (fallback)
     if (!$downloaded) {
         try {
             Log "Baixando Python via Invoke-WebRequest..."
             Invoke-WebRequest -Uri $pyUrl -OutFile $pyInstaller -UseBasicParsing
-            $fileSize = (Get-Item $pyInstaller).Length
-            Log "Download concluido (Invoke-WebRequest). Tamanho: $fileSize bytes"
+            Log "Download concluido (Invoke-WebRequest). Tamanho: $((Get-Item $pyInstaller).Length) bytes"
             $downloaded = $true
         } catch {
             Log "Invoke-WebRequest falhou: $($_.Exception.Message)"
-        }
-    }
-
-    # Tentativa 3: BITS (Background Intelligent Transfer Service)
-    if (!$downloaded) {
-        try {
-            Log "Baixando Python via BITS..."
-            Start-BitsTransfer -Source $pyUrl -Destination $pyInstaller -ErrorAction Stop
-            $fileSize = (Get-Item $pyInstaller).Length
-            Log "Download concluido (BITS). Tamanho: $fileSize bytes"
-            $downloaded = $true
-        } catch {
-            Log "BITS falhou: $($_.Exception.Message)"
         }
     }
 
@@ -185,49 +158,17 @@ if (!$pyFound) {
             Log "Executando instalador Python silencioso..."
             $proc = Start-Process $pyInstaller -ArgumentList '/quiet','InstallAllUsers=0','PrependPath=1','Include_pip=1','Include_doc=0','Include_test=0','Include_dev=0','Include_launcher=0','Include_tcltk=1' -Wait -PassThru
             Log "Instalador Python finalizado. ExitCode: $($proc.ExitCode)"
-
             Remove-Item $pyInstaller -Force -ErrorAction SilentlyContinue
-
-            # Atualiza PATH da sessao atual
             $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
             $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
             $env:Path = "$userPath;$machinePath"
-            Log "PATH atualizado: $env:Path"
-
-            # Verifica se Python agora esta disponivel
-            $pyOk = $false
-            try {
-                $pyVerNew = & pythonw --version 2>&1 | Out-String
-                if ($pyVerNew -match "Python \d+\.\d+") {
-                    Log "Python pos-instalacao OK (pythonw): $($pyVerNew.Trim())"
-                    $pyOk = $true
-                }
-            } catch {}
-            if (!$pyOk) {
-                try {
-                    $pyVerNew = & python --version 2>&1 | Out-String
-                    if ($pyVerNew -match "Python \d+\.\d+") {
-                        Log "Python pos-instalacao OK (python): $($pyVerNew.Trim())"
-                        $pyOk = $true
-                    }
-                } catch {}
-            }
-            if (!$pyOk) {
-                Log "AVISO: Python instalado mas nao encontrado no PATH desta sessao. Funcionara apos reiniciar."
-            }
         } catch {
             Log "ERRO ao executar instalador Python: $($_.Exception.Message)"
-            [System.Windows.Forms.MessageBox]::Show(
-                "Erro ao instalar Python: $($_.Exception.Message)`n`nLog salvo em:`n$logFile",
-                "WhatsApp Identifier - Erro",
-                [System.Windows.Forms.MessageBoxButtons]::OK,
-                [System.Windows.Forms.MessageBoxIcon]::Error
-            )
         }
     } else {
         Log "ERRO: todas as tentativas de download falharam"
         $resp = [System.Windows.Forms.MessageBox]::Show(
-            "Nao foi possivel baixar o Python automaticamente.`nDeseja abrir o site para instalar manualmente?`n`nApos instalar, execute este instalador novamente.`n`nLog salvo em:`n$logFile",
+            "Nao foi possivel baixar o Python automaticamente.`nDeseja abrir o site para instalar manualmente?",
             "WhatsApp Identifier - Erro",
             [System.Windows.Forms.MessageBoxButtons]::YesNo,
             [System.Windows.Forms.MessageBoxIcon]::Error
@@ -238,51 +179,6 @@ if (!$pyFound) {
     }
 } else {
     Log "Python ja estava instalado, prosseguindo"
-}
-
-# ── Instalar modulo websockets (necessario para blur CSS) ─────────
-Log "Verificando/instalando modulo websockets..."
-$wsInstalled = $false
-
-# Tenta com python primeiro (mais confiavel que pythonw para verificacao)
-foreach ($pyCmd in @("python", "pythonw")) {
-    try {
-        $pipCheck = & $pyCmd -c "import websockets; print('ok')" 2>&1 | Out-String
-        if ($pipCheck -match "ok") {
-            Log "websockets ja instalado (via $pyCmd)"
-            $wsInstalled = $true
-            break
-        }
-    } catch {}
-}
-
-if (!$wsInstalled) {
-    Log "websockets nao encontrado, instalando..."
-    # Tenta pip install com --user flag para garantir instalacao no perfil do usuario
-    foreach ($pyCmd in @("python", "pythonw")) {
-        try {
-            $pipOut = & $pyCmd -m pip install websockets --user --quiet 2>&1 | Out-String
-            Log "pip install websockets ($pyCmd --user): $($pipOut.Trim())"
-            # Verifica se instalou
-            $check2 = & $pyCmd -c "import websockets; print('ok')" 2>&1 | Out-String
-            if ($check2 -match "ok") {
-                Log "websockets instalado com sucesso via $pyCmd"
-                $wsInstalled = $true
-                break
-            }
-        } catch {
-            Log "pip install via $pyCmd falhou: $($_.Exception.Message)"
-        }
-    }
-    if (!$wsInstalled) {
-        Log "AVISO: nao foi possivel instalar websockets com nenhum comando Python"
-        [System.Windows.Forms.MessageBox]::Show(
-            "Nao foi possivel instalar o modulo 'websockets'.`nO blur de privacidade nao funcionara.`n`nAbra o terminal e execute manualmente:`npython -m pip install websockets",
-            "WhatsApp Identifier - Aviso",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
-        )
-    }
 }
 
 # ── Limpar env var global WebView2 (versoes anteriores setavam isso) ──
@@ -309,7 +205,7 @@ try {
     $regUni = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\WhatsAppIdentifier"
     if (!(Test-Path $regUni)) { New-Item $regUni -Force | Out-Null }
     Set-ItemProperty $regUni "DisplayName"     "WhatsApp Identifier"
-    Set-ItemProperty $regUni "DisplayVersion"  "3.6.1"
+    Set-ItemProperty $regUni "DisplayVersion"  "4.0.0"
     Set-ItemProperty $regUni "Publisher"       "JoaoPedro"
     Set-ItemProperty $regUni "InstallLocation" $installDir
     Set-ItemProperty $regUni "NoModify"        1 -Type DWord
@@ -330,7 +226,7 @@ try {
 Log "========== INSTALACAO FINALIZADA =========="
 
 [System.Windows.Forms.MessageBox]::Show(
-    "Instalacao concluida!`n`nO WhatsApp Identifier esta ativo na bandeja do sistema.`nIniciara automaticamente com o Windows.`n`nIMPORTANTE: Para o blur de privacidade funcionar,`nfeche e reabra o WhatsApp Desktop uma vez.`n`nLog salvo em:`n$logFile",
+    "Instalacao concluida!`n`nO WhatsApp Identifier esta ativo na bandeja do sistema.`nIniciara automaticamente com o Windows.`n`nLog salvo em:`n$logFile",
     "WhatsApp Identifier",
     [System.Windows.Forms.MessageBoxButtons]::OK,
     [System.Windows.Forms.MessageBoxIcon]::Information
@@ -373,7 +269,7 @@ Log "========== INSTALACAO FINALIZADA =========="
     Write-Host "Script de instalacao gerado: WhatsAppIdentifier_Setup.ps1" -ForegroundColor Green
 
     # Tenta instalar ps2exe e converter para .exe
-    $setupExe = Join-Path $src "WAIdentifier_Setup_v3.6.1.exe"
+    $setupExe = Join-Path $src "WAIdentifier_Setup_v4.0.0.exe"
     $converted = $false
 
     try {
