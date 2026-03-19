@@ -17,8 +17,8 @@ except Exception:
     pass
 
 # ── Design Tokens ────────────────────────────────────────────────────
-WIDTH = 380
-HEIGHT = 480
+WIDTH = 600
+HEIGHT = 400
 
 # Surface
 BG_PRIMARY    = "#111B21"
@@ -479,7 +479,7 @@ class SettingsWindow:
 
     # ── Footer ────────────────────────────────────────────────────────
     def _build_footer(self):
-        tk.Label(self.root, text="v4.0 \u00B7 WhatsApp Desktop",
+        tk.Label(self.root, text="v4.0.1 \u00B7 WhatsApp Desktop",
                  font=(FONT_FAMILY, 8), fg=TEXT_MUTED,
                  bg=BG_PRIMARY).pack(pady=(0, 10))
 

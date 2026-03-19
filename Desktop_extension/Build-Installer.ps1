@@ -182,11 +182,18 @@ if (!$pyFound) {
 }
 
 # ── Limpar env var global WebView2 (versoes anteriores setavam isso) ──
-Log "Limpando env var WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (se existir)..."
+# A env var agora nao e mais persistida no registro para evitar que
+# Teams e outros apps WebView2 roubem a porta CDP.
+Log "Removendo env var WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS do registro (se existir)..."
 try {
     $envName = "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"
-    [Environment]::SetEnvironmentVariable($envName, "--remote-debugging-port=9351", "User")
-    Log "WebView2 debug port configurado: --remote-debugging-port=9351"
+    $current = [Environment]::GetEnvironmentVariable($envName, "User")
+    if ($current) {
+        [Environment]::SetEnvironmentVariable($envName, $null, "User")
+        Log "Env var removida do registro (valor anterior: $current)"
+    } else {
+        Log "Env var nao estava no registro, nada a fazer"
+    }
 } catch {
     Log "AVISO: nao foi possivel limpar env var: $($_.Exception.Message)"
 }
@@ -205,7 +212,7 @@ try {
     $regUni = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\WhatsAppIdentifier"
     if (!(Test-Path $regUni)) { New-Item $regUni -Force | Out-Null }
     Set-ItemProperty $regUni "DisplayName"     "WhatsApp Identifier"
-    Set-ItemProperty $regUni "DisplayVersion"  "4.0.0"
+    Set-ItemProperty $regUni "DisplayVersion"  "4.0.1"
     Set-ItemProperty $regUni "Publisher"       "JoaoPedro"
     Set-ItemProperty $regUni "InstallLocation" $installDir
     Set-ItemProperty $regUni "NoModify"        1 -Type DWord
@@ -269,7 +276,7 @@ Log "========== INSTALACAO FINALIZADA =========="
     Write-Host "Script de instalacao gerado: WhatsAppIdentifier_Setup.ps1" -ForegroundColor Green
 
     # Tenta instalar ps2exe e converter para .exe
-    $setupExe = Join-Path $src "WAIdentifier_Setup_v4.0.0.exe"
+    $setupExe = Join-Path $src "WAIdentifier_Setup_v4.0.1.exe"
     $converted = $false
 
     try {
